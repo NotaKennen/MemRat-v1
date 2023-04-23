@@ -1,4 +1,4 @@
-MemRat a.k.a MemWare (v2) is a quite simple rat designed to be used through a Discord Bot. 
+MemRat a.k.a MemWare is a quite simple rat designed to be used through a Discord Bot. 
 
 The main functions include:
  - Uploading (and executing) files on the victim's machine
