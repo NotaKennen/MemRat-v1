@@ -15,8 +15,8 @@ RAT USE AND COMPILING
 
 WIP IDEAS:
  - Downloading files from the victim's computer
- - Stream the screen onto a VC (won't be done until Discord adds that into their API)
  - Computer crasher
  - Keylogger
  - Probably import this to work on the web instead of discord some day
  - In-script obfuscator
+ - Timed screen recording (and maybe even a full one)
