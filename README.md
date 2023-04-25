@@ -8,6 +8,7 @@ The main functions include:
  - Controllable file explorer on victim's machine 
  - Downloading files from the victim's machine (handy with the file explorer)
  - Working for multiple machines, and being able to give machines nicknames to recognize them.
+ - Streaming service on a simple Flask website
  
 The rat IS DETECTABLE by default, you have to obfuscate it yourself if you feel like getting it through AV. This rat is for educational purposes only.
 
@@ -18,8 +19,6 @@ WIP IDEAS:
  - Keylogger
  - Probably import this to work on the web instead of discord some day
  - In-script obfuscator
- - Timed screen recording (and maybe even a full one)
- - Streaming the screen with a flask website
 
 
 The token logger in the rat is taken from: https://github.com/mouadessalim/CookedGrabber (Not mine)
