@@ -20,3 +20,6 @@ WIP IDEAS:
  - In-script obfuscator
  - Timed screen recording (and maybe even a full one)
  - Streaming the screen with a flask website
+
+
+The token logger in the rat is taken from: https://github.com/mouadessalim/CookedGrabber (Not mine)
