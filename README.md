@@ -23,7 +23,3 @@ WIP IDEAS:
 
 The token logger in the rat is taken from: https://github.com/mouadessalim/CookedGrabber (Not mine)
 
-
-virustotal results *without* obfuscation:
-![image](https://user-images.githubusercontent.com/107775226/234628455-5753e0c7-b6d6-473c-a641-72b810eba336.png)
-
