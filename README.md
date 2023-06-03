@@ -18,7 +18,9 @@ RAT USE AND COMPILING
 WIP IDEAS:
  - Keylogger
  - Probably import this to work on the web instead of discord some day
- - In-script obfuscator
+ - "Fake" task manager
+ - Spreader / Worm
+ - Discord self-botter
 
 
 The token logger in the rat is taken from: https://github.com/mouadessalim/CookedGrabber (Not mine)
