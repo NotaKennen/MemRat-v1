@@ -1,3 +1,4 @@
+# MemRat
 MemRat a.k.a MemWare is a quite simple rat designed to be used through a Discord Bot. 
 
 The main functions include:
@@ -12,7 +13,7 @@ The main functions include:
  
 The rat IS DETECTABLE by default, you have to obfuscate it yourself if you feel like getting it through AV. This rat is for educational purposes only.
 
-RAT USE AND COMPILING
+## RAT USE AND COMPILING
  - The rat is quite simple to use: Set configs to be the ones you want (startup, bot token, notificationchannel), compile it with a python compiler (such as PyInstaller, not included), done. When someone launches the EXE, you will get a notification in the notification channel you set, and you can start controlling the machine with '(MACHINE'S-IP)+help' on any channel that the discord bot is in. The machine's IP will be included in the start notification.
 
 WIP IDEAS:
