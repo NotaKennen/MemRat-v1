@@ -6,8 +6,8 @@ The main functions include:
  - Taking the target's tokens
  - Annoying the target
  - Being remote controlled
- - Controllable file explorer on victim's machine 
- - Downloading files from the victim's machine (handy with the file explorer)
+ - Controllable file explorer on target's machine 
+ - Downloading files from the target's machine (handy with the file explorer)
  - Working for multiple machines at once, and being able to give machines nicknames to recognize them.
  - Streaming service on a simple Flask website (a bit broken currently)
 
